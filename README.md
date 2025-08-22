@@ -23,19 +23,3 @@ It allows you to **create, update, filter, and delete tasks** with real-time sta
 - **Frontend**: HTML, CSS, JavaScript  
 - **API Format**: REST (JSON responses)  
 
----
-
-## 📂 Project Structure
-
-task-manager-pro/
-│── app.py # Flask backend
-│── tasks.db # SQLite database (auto-created)
-│
-├── templates/
-│ └── index.html # Frontend UI
-│
-├── static/
-│ ├── styles.css # Styling
-│ └── script.js # Frontend logic (fetch API, modal, etc.)
-│
-└── README.md # Documentation
