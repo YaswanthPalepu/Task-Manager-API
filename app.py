@@ -2,7 +2,6 @@ from flask import Flask, request, jsonify, render_template
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from datetime import datetime
-import os
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///tasks.db'
@@ -41,109 +40,80 @@ def index():
 
 @app.route('/api/tasks', methods=['GET'])
 def get_tasks():
-    try:
-        status_filter = request.args.get('status')
-        priority_filter = request.args.get('priority')
-        
-        query = Task.query
-        
-        if status_filter:
-            query = query.filter(Task.status == status_filter)
-        if priority_filter:
-            query = query.filter(Task.priority == priority_filter)
-            
-        tasks = query.order_by(Task.created_at.desc()).all()
-        return jsonify([task.to_dict() for task in tasks])
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    status_filter = request.args.get('status')
+    priority_filter = request.args.get('priority')
+
+    query = Task.query
+    if status_filter:
+        query = query.filter(Task.status == status_filter)
+    if priority_filter:
+        query = query.filter(Task.priority == priority_filter)
+
+    tasks = query.order_by(Task.created_at.desc()).all()
+    return jsonify([task.to_dict() for task in tasks])
 
 @app.route('/api/tasks', methods=['POST'])
 def create_task():
-    try:
-        data = request.get_json()
-        
-        if not data or not data.get('title'):
-            return jsonify({'error': 'Title is required'}), 400
-        
-        due_date = None
-        if data.get('due_date'):
-            due_date = datetime.fromisoformat(data['due_date'].replace('Z', '+00:00'))
-        
-        task = Task(
-            title=data['title'],
-            description=data.get('description', ''),
-            status=data.get('status', 'pending'),
-            priority=data.get('priority', 'medium'),
-            due_date=due_date
-        )
-        
-        db.session.add(task)
-        db.session.commit()
-        
-        return jsonify(task.to_dict()), 201
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    data = request.get_json()
+    if not data or not data.get('title'):
+        return jsonify({'error': 'Title is required'}), 400
+
+    due_date = None
+    if data.get('due_date'):
+        due_date = datetime.fromisoformat(data['due_date'].replace('Z', '+00:00'))
+
+    task = Task(
+        title=data['title'],
+        description=data.get('description', ''),
+        status=data.get('status', 'pending'),
+        priority=data.get('priority', 'medium'),
+        due_date=due_date
+    )
+    db.session.add(task)
+    db.session.commit()
+    return jsonify(task.to_dict()), 201
 
 @app.route('/api/tasks/<int:task_id>', methods=['GET'])
 def get_task(task_id):
-    try:
-        task = Task.query.get_or_404(task_id)
-        return jsonify(task.to_dict())
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    task = Task.query.get_or_404(task_id)
+    return jsonify(task.to_dict())
 
 @app.route('/api/tasks/<int:task_id>', methods=['PUT'])
 def update_task(task_id):
-    try:
-        task = Task.query.get_or_404(task_id)
-        data = request.get_json()
-        
-        if not data:
-            return jsonify({'error': 'No data provided'}), 400
-        
-        task.title = data.get('title', task.title)
-        task.description = data.get('description', task.description)
-        task.status = data.get('status', task.status)
-        task.priority = data.get('priority', task.priority)
-        
-        if data.get('due_date'):
-            task.due_date = datetime.fromisoformat(data['due_date'].replace('Z', '+00:00'))
-        
-        task.updated_at = datetime.utcnow()
-        
-        db.session.commit()
-        return jsonify(task.to_dict())
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    task = Task.query.get_or_404(task_id)
+    data = request.get_json()
+
+    task.title = data.get('title', task.title)
+    task.description = data.get('description', task.description)
+    task.status = data.get('status', task.status)
+    task.priority = data.get('priority', task.priority)
+
+    if data.get('due_date'):
+        task.due_date = datetime.fromisoformat(data['due_date'].replace('Z', '+00:00'))
+
+    db.session.commit()
+    return jsonify(task.to_dict())
 
 @app.route('/api/tasks/<int:task_id>', methods=['DELETE'])
 def delete_task(task_id):
-    try:
-        task = Task.query.get_or_404(task_id)
-        db.session.delete(task)
-        db.session.commit()
-        return jsonify({'message': 'Task deleted successfully'})
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    task = Task.query.get_or_404(task_id)
+    db.session.delete(task)
+    db.session.commit()
+    return jsonify({'message': 'Task deleted successfully'})
 
 @app.route('/api/tasks/stats', methods=['GET'])
 def get_stats():
-    try:
-        total_tasks = Task.query.count()
-        completed_tasks = Task.query.filter(Task.status == 'completed').count()
-        pending_tasks = Task.query.filter(Task.status == 'pending').count()
-        in_progress_tasks = Task.query.filter(Task.status == 'in_progress').count()
-        
-        stats = {
-            'total': total_tasks,
-            'completed': completed_tasks,
-            'pending': pending_tasks,
-            'in_progress': in_progress_tasks
-        }
-        
-        return jsonify(stats)
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    total_tasks = Task.query.count()
+    completed_tasks = Task.query.filter(Task.status == 'completed').count()
+    pending_tasks = Task.query.filter(Task.status == 'pending').count()
+    in_progress_tasks = Task.query.filter(Task.status == 'in_progress').count()
+
+    return jsonify({
+        'total': total_tasks,
+        'completed': completed_tasks,
+        'pending': pending_tasks,
+        'in_progress': in_progress_tasks
+    })
 
 if __name__ == '__main__':
     with app.app_context():
