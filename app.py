@@ -4,7 +4,7 @@ from flask_cors import CORS
 from datetime import datetime
 import os
 
-app = Flask(_name_)
+app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///tasks.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
@@ -145,7 +145,7 @@ def get_stats():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-if _name_ == '_main_':
+if __name__ == '__main__':
     with app.app_context():
         db.create_all()
     app.run(debug=True, host='0.0.0.0', port=5000)
